@@ -5,6 +5,7 @@
 COOLDOWN_DIR="/tmp/resource-alert-cooldown"
 COOLDOWN_SECONDS=14400  # 4 hours per issue
 ENV_FILE="${ENV_FILE:-$(dirname "$0")/.env}"
+BRANDING_FILE="${BRANDING_FILE:-$(dirname "$0")/branding.sh}"
 
 # Source webhook URL
 WEBHOOK_URL=$(grep '^ADMIN_WEBHOOK_URL=' "$ENV_FILE" | cut -d= -f2-)
@@ -13,12 +14,20 @@ if [[ -z "$WEBHOOK_URL" ]]; then
     exit 1
 fi
 
+if [[ -f "$BRANDING_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$BRANDING_FILE"
+fi
+
+BOT_USERNAME="${BOT_USERNAME:-Boo Bot}"
+BOT_AVATAR_URL="${BOT_AVATAR_URL:-}"
+
 mkdir -p "$COOLDOWN_DIR"
 
 send_alert() {
     local message="$1"
     curl -s -H "Content-Type: application/json" \
-        -d "{\"content\": \"$message\"}" \
+        -d "{\"username\":\"$BOT_USERNAME\",\"avatar_url\":\"$BOT_AVATAR_URL\",\"content\":\"$message\"}" \
         "$WEBHOOK_URL" > /dev/null
 }
 
