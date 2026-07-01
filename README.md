@@ -6,10 +6,15 @@ The cooldown system is the part I'm most happy with — each alert type has its 
 
 These run on my [49-service self-hosted media server](https://github.com/tylerbcrawford/infrastructure-showcase) and report to Discord `#admin`.
 
-<p align="center">
-  <img src="docs/images/resource-audit-discord.png" width="480" alt="Discord embed from Boo Bot reporting a resource audit with a CPU bottleneck and over-provisioned containers"><br>
-  <sub>A resource audit on the same server: CPU bottleneck, top consumers, and right-sizing opportunities, delivered to #admin.</sub>
-</p>
+**Example alert format** (plain Discord webhook messages posted by the scripts, sent under the `Boo Bot` identity):
+
+```
+💾 Swap usage high: 84% (6.5G/7.8G)
+💿 Root disk usage high: 91% (410G/450G)
+🐳 Docker reclaimable space: 62.4GB — consider running image prune
+⚠️ Container unhealthy: qbittorrent-vpn
+🔁 High restart count: radarr has restarted 5 times
+```
 
 ## Features
 
