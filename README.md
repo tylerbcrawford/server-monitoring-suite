@@ -4,6 +4,13 @@ I got tired of waking up to find a container had been in a restart loop for 8 ho
 
 The cooldown system is the part I'm most happy with — each alert type has its own per-resource cooldown (1 hour for container issues, 4 hours for resource alerts, 1 day for cert warnings), so you get notified about problems without getting spammed about the same issue over and over.
 
+These run on my [49-service self-hosted media server](https://github.com/tylerbcrawford/infrastructure-showcase) and report to Discord `#admin`.
+
+<p align="center">
+  <img src="docs/images/resource-audit-discord.png" width="480" alt="Discord embed from Boo Bot reporting a resource audit with a CPU bottleneck and over-provisioned containers"><br>
+  <sub>A resource audit on the same server: CPU bottleneck, top consumers, and right-sizing opportunities, delivered to #admin.</sub>
+</p>
+
 ## Features
 
 | Script | What it monitors | Notifications | Cooldown |
@@ -12,6 +19,13 @@ The cooldown system is the part I'm most happy with — each alert type has its 
 | `resource-alert.sh` | Swap usage (>80%), disk usage (>85%), Docker reclaimable space (>50GB) | Discord | 4 hours per issue |
 | `cert-expiry-check.sh` | SSL certificates expiring within 30 days | Discord | 1 day per cert |
 | `log-health-check.sh` | Docker logs, journald, app logs, script logs, stray logs | Terminal only | N/A |
+
+## Skills Demonstrated
+
+- **Observability** — health, resource, certificate, and log signals collected across the host and every container from dependency-light Bash.
+- **SSL certificate lifecycle** — parses `certbot` output and warns 30 days before expiry, so a renewal never lapses silently.
+- **Threshold alerting** — swap, disk, and reclaimable-space checks fire only when a value crosses its defined limit, which keeps the signal-to-noise ratio high.
+- **Deduplication and cooldowns** — per-resource cooldown files in `/tmp` suppress repeat alerts (1h container, 4h resource, 1d cert) and clear on reboot.
 
 ## Prerequisites
 
