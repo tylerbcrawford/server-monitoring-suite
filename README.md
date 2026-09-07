@@ -4,7 +4,7 @@ I got tired of waking up to find a container had been in a restart loop for 8 ho
 
 The cooldown system is the part I'm most happy with — each alert type has its own per-resource cooldown (1 hour for container issues, 4 hours for resource alerts, 1 day for cert warnings), so you get notified about problems without getting spammed about the same issue over and over.
 
-These run on my [49-service self-hosted media server](https://github.com/tylerbcrawford/infrastructure-showcase) and report to Discord `#admin`.
+These run on my [57-service self-hosted media server](https://github.com/tylerbcrawford/infrastructure-showcase) and report to Discord `#admin`.
 
 **Example alert format** (plain Discord webhook messages posted by the scripts, sent under the `Boo Bot` identity):
 
