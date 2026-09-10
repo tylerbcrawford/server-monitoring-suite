@@ -1,5 +1,7 @@
 # Server Monitoring Suite
 
+> **Built with Claude Code.** I set the requirements and the architecture, made the design decisions, and run it in production on my media server. The agent wrote most of the code under my direction.
+
 I got tired of waking up to find a container had been in a restart loop for 8 hours with nobody noticing. These scripts monitor Docker containers, system resources, and SSL certificates, and send Discord alerts when something needs attention.
 
 The cooldown system is the part I'm most happy with — each alert type has its own per-resource cooldown (1 hour for container issues, 4 hours for resource alerts, 1 day for cert warnings), so you get notified about problems without getting spammed about the same issue over and over.
