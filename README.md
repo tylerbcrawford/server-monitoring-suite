@@ -32,7 +32,7 @@ These run on my [57-service self-hosted media server](https://github.com/tylerbc
 - **Observability** — health, resource, certificate, and log signals collected across the host and every container from dependency-light Bash.
 - **SSL certificate lifecycle** — parses `certbot` output and warns 30 days before expiry, so a renewal never lapses silently.
 - **Threshold alerting** — swap, disk, and reclaimable-space checks fire only when a value crosses its defined limit, which keeps the signal-to-noise ratio high.
-- **Deduplication and cooldowns** — per-resource cooldown files in `/tmp` suppress repeat alerts (1h container, 4h resource, 1d cert) and clear on reboot.
+- **Deduplication and cooldowns** — per-resource cooldown files under a persistent state directory suppress repeat alerts (1h container, 4h resource, 1d cert) and double as recovery markers.
 
 ## Prerequisites
 
@@ -123,7 +123,8 @@ Audits log sizes across the system and outputs a color-coded report to the termi
 
 | Variable | Required | Used by | Description |
 |----------|----------|---------|-------------|
-| `ADMIN_WEBHOOK_URL` | Yes (for Discord scripts) | container-health-monitor, resource-alert, cert-expiry-check | Discord webhook URL |
+| `ADMIN_WEBHOOK_URL` | Yes (unless `NOTIFY_COMMAND` is set) | container-health-monitor, resource-alert, cert-expiry-check | Discord webhook URL |
+| `NOTIFY_COMMAND` | No | container-health-monitor, resource-alert, cert-expiry-check | Custom notifier, replaces the webhook (see [Custom notifier hook](#custom-notifier-hook)) |
 | `CERTBOT_BIN` | No | cert-expiry-check | Path to certbot binary (default: `/usr/bin/certbot`) |
 | `DOWNLOAD_LOG` | No | log-health-check | Path to download client log file |
 | `APP_LOG_DIR` | No | log-health-check | Path to application log directory |
@@ -152,13 +153,31 @@ export ARR_SERVICES="sonarr radarr prowlarr"
 
 ## How Cooldowns Work
 
-Each script uses a temporary directory under `/tmp/` to track when alerts were last sent. A file is created per alert key with a Unix timestamp. On the next run, if the cooldown period hasn't elapsed, the alert is suppressed. Cooldown files are automatically cleaned up on reboot since they live in `/tmp/`.
+Each script keeps a small state directory to track when alerts were last sent: `${STATE_DIR:-$HOME/.local/state/server-monitoring-suite}/<script-dir>/`. A file is created per alert key containing a Unix timestamp (plus the alert title on a second line). On the next run, if the cooldown period hasn't elapsed, the alert is suppressed. The directory is persistent, so cooldowns survive restarts; set `STATE_DIR` to relocate it.
 
-| Script | Cooldown Directory | Period |
+| Script | Cooldown Directory (under `STATE_DIR`) | Period |
 |--------|-------------------|--------|
-| container-health-monitor | `/tmp/container-health-cooldown/` | 1 hour |
-| resource-alert | `/tmp/resource-alert-cooldown/` | 4 hours |
-| cert-expiry-check | `/tmp/cert-expiry-cooldown/` | 1 day |
+| container-health-monitor | `container-health-cooldown/` | 1 hour |
+| resource-alert | `resource-alert-cooldown/` | 4 hours |
+| cert-expiry-check | `cert-expiry-cooldown/` | 1 day |
+
+### Recovery notifications
+
+A cooldown file doubles as a marker that an alert is open. When a later run finds the condition cleared and the marker still exists, the script sends a recovery notification and removes the marker: a plain `Recovered: <title>` message to the webhook, or a `resolved` call to the notifier hook. Checks are skipped (markers left alone) when the underlying query fails, such as Docker not answering or `certbot` returning no certificates, so a transient error is never reported as a recovery. For containers, a marker is only resolved while the container is still running.
+
+For testing, thresholds can be overridden with environment variables: `SWAP_THRESHOLD`, `DISK_THRESHOLD`, `DOCKER_RECLAIM_GB` (resource-alert), `RESTART_COUNT_MAX` (container-health-monitor) and `WARN_DAYS` (cert-expiry-check).
+
+## Custom notifier hook
+
+Set `NOTIFY_COMMAND` (in the environment or in `.env`) to send alerts somewhere other than the Discord webhook. It is off by default; with it unset, behaviour is unchanged apart from the recovery message above.
+
+When set, every notification runs
+
+```bash
+$NOTIFY_COMMAND <status> <title> <body>
+```
+
+and the webhook post is skipped (`ADMIN_WEBHOOK_URL` is then optional). `status` is `warn`, `down` or `resolved` (the shared contract also reserves `ok` and `info`). `title` is a stable one-line name for the condition (for example `Container unhealthy: radarr`); the matching `resolved` call repeats the same title, so a notifier can use it to pair an alert with its recovery. The value is trusted configuration run through `bash -c`, so a command prefix works: `NOTIFY_COMMAND="env CHANNEL=ops /usr/local/bin/my-notifier"`. A failing command is ignored.
 
 ## License
 
