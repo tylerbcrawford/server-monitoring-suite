@@ -43,11 +43,11 @@ send_alert() {
 
 # Deliver a notification. With NOTIFY_COMMAND set, runs
 #   $NOTIFY_COMMAND <status> <title> <body>     (status: warn | down | resolved)
-# otherwise posts the plain message to the webhook.
+# otherwise posts the plain message to the webhook. Returns the delivery exit status.
 notify() {
     local status="$1" title="$2" body="$3" message="$4"
     if [[ -n "$NOTIFY_COMMAND" ]]; then
-        bash -c "$NOTIFY_COMMAND \"\$@\"" _ "$status" "$title" "$body" || true
+        bash -c "$NOTIFY_COMMAND \"\$@\"" _ "$status" "$title" "$body"
     else
         send_alert "$message"
     fi
@@ -80,8 +80,8 @@ resolve_marker() {
     [[ -f "$file" ]] || return 0
     title=$(sed -n 2p "$file")
     title="${title:-$key}"
-    notify resolved "$title" "$body" "✅ **Recovered:** $title"
-    rm -f "$file"
+    # keep the marker if delivery failed, so the recovery is retried on the next run
+    notify resolved "$title" "$body" "✅ **Recovered:** $title" && rm -f "$file"
 }
 
 
