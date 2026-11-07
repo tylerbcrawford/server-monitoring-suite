@@ -129,7 +129,7 @@ Audits log sizes across the system and outputs a color-coded report to the termi
 | `DOWNLOAD_LOG` | No | log-health-check | Path to download client log file |
 | `APP_LOG_DIR` | No | log-health-check | Path to application log directory |
 | `EXTRA_LOG_DIRS` | No | log-health-check | Space-separated additional log directories |
-| `ARR_SERVICES` | No | log-health-check | Space-separated Docker container names (default: `sonarr radarr prowlarr readarr lidarr`) |
+| `ARR_SERVICES` | No | log-health-check | Space-separated Docker container names (default: `sonarr radarr prowlarr readarr lidarr`; set to empty to skip) |
 
 ### Overriding .env Location
 

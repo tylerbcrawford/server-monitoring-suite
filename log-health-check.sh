@@ -16,7 +16,8 @@ APP_LOG_DIR="${APP_LOG_DIR:-}"
 EXTRA_LOG_DIRS="${EXTRA_LOG_DIRS:-}"
 
 # *arr services to check (Docker container names)
-ARR_SERVICES=(${ARR_SERVICES:-sonarr radarr prowlarr readarr lidarr})
+# Set ARR_SERVICES="" to skip this check on hosts without *arr apps
+ARR_SERVICES=(${ARR_SERVICES-sonarr radarr prowlarr readarr lidarr})
 
 # =============================================================================
 
@@ -66,7 +67,9 @@ for svc in "${ARR_SERVICES[@]}"; do
     count=$(docker exec $svc sh -c 'ls /config/logs/*.txt 2>/dev/null | wc -l' 2>/dev/null)
     size=$(docker exec $svc sh -c 'du -sh /config/logs/ 2>/dev/null' 2>/dev/null | awk '{print $1}')
     echo -n "  $svc: ${count:-?} files, ${size:-?} "
-    if [ "${count:-0}" -gt 10 ]; then
+    if [ -z "$count" ]; then
+        echo -e "${RED}[UNKNOWN: container not reachable]${NC}"
+    elif [ "$count" -gt 10 ]; then
         echo -e "${RED}[WARNING: >10 log files]${NC}"
     else
         echo -e "${GREEN}[OK]${NC}"
