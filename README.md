@@ -66,17 +66,28 @@ Add to your crontab (`crontab -e`):
 
 ```cron
 # Container health — every 5 minutes
-*/5 * * * * /path/to/server-monitoring-suite/container-health-monitor.sh
+*/5 * * * * /path/to/server-monitoring-suite/cron-run.sh container-health /path/to/server-monitoring-suite/container-health-monitor.sh
 
 # Resource alerts — every 15 minutes
-*/15 * * * * /path/to/server-monitoring-suite/resource-alert.sh
+*/15 * * * * /path/to/server-monitoring-suite/cron-run.sh resource-alert /path/to/server-monitoring-suite/resource-alert.sh
 
-# SSL cert expiry — daily at 8am
-0 8 * * * /path/to/server-monitoring-suite/cert-expiry-check.sh
+# SSL cert expiry — daily at 8am; alert on the first failure
+0 8 * * * CRON_RUN_FAIL_AFTER=1 /path/to/server-monitoring-suite/cron-run.sh cert-expiry /path/to/server-monitoring-suite/cert-expiry-check.sh
 
 # Log health audit — weekly on Sunday at 9am
 0 9 * * 0 /path/to/server-monitoring-suite/log-health-check.sh >> /var/log/log-health-check.log 2>&1
 ```
+
+### Watching any cron job: cron-run.sh
+
+Cron discards output and exit codes on a host with no mail server. `cron-run.sh <job-name> <command> [args...]` runs a job and:
+
+- keeps non-empty output in `~/.local/share/vps-monitoring-logs/cron-<job-name>.log`, capped at 1 MB
+- records the last success in `~/.local/state/server-monitoring-suite/cron-run/<job-name>.last-ok`
+- alerts once after `CRON_RUN_FAIL_AFTER` consecutive failures (default 2) and sends `resolved` on recovery
+- exits with the job's exit code
+
+It uses the same `NOTIFY_COMMAND` or `ADMIN_WEBHOOK_URL` settings as the other scripts. If an alert can't be delivered, the next failing run tries again. It only sees jobs that end, so a hung job needs its own timeout.
 
 ## Script Details
 
